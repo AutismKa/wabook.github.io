@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <link href="css/layui.css" rel="stylesheet">
+  <link href="css/login.css" rel="stylesheet">
+  <title>瓦的手册登录</title>
+  <meta name="viewport"
+    content="width=device-width,user-scalable=yes, minimum-scale=0.4, initial-scale=0.8,target-densitydpi=low-dpi" />
+</head>
+<style type="text/css">
+</style>
+
+<body class="login-bg">
+  <div class="login layui-anim layui-anim-up">
+    <div class="message">瓦的手册登录</div>
+    <div id="darkbannerwrap"></div>
+
+    <form method="post" class="layui-form">
+      <input name="username" placeholder="用户名" type="text" lay-verify="required" class="layui-input">
+      <hr class="hr15 hr-common">
+      <input name="password" lay-verify="required" placeholder="密码" type="password" class="layui-input">
+      <hr class="hr15 hr-common">
+      <button class="layui-btn layui-btn-lg login-btn" lay-filter="login" lay-submit style="width:100%;"
+        type="submit">登录</button>
+      <!-- <input value="登录" lay-submit lay-filter="login" style="width:100%;" type="submit"> -->
+      <hr class="hr20 hr-common">
+      <p style="color:#ff1356">本站不保存任何用户信息，用户名和密码仅作为API调用，请放心访问</p>
+    </form>
+  </div>
+  </div>
+</body>
+<script type="text/javascript" src="layui.js"></script>
+<script type="text/javascript" src="js/axios.min.js"></script>
+<script type="text/javascript" src="js/jquery.js"></script>
+<script type="text/javascript" src="js/api/api.js"></script>
+<script>
+  $(function () {
+    layui.use('form', function () {
+      var form = layui.form
+      // layer.msg('加载中', function(){
+      //   //关闭后的操作
+      //   });
+      //监听提交
+      form.on('submit(login)', function (data) {
+        $('.login-btn').addClass('layui-btn-disabled')
+        $('.login-btn').attr('disabled', true)
+        $('.login-btn').html('<i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop"></i>登录中')
+        getToken(data.field.username, data.field.password, (msg, res) => {
+          if (res == null) {
+            layer.alert(msg, {
+              icon: 0
+            })
+            $('.login-btn').removeClass('layui-btn-disabled')
+            $('.login-btn').attr('disabled', false)
+            $('.login-btn').html('登录')
+          } else {
+            if (res.data.data.SkinsPanelLayout) {
+              let data = {
+                access_token: access_token,
+                id_token: id_token,
+                expires_in: expires_in,
+                entitlements_token: entitlements_token,
+                playerId: playerId,
+                playerName: playerName,
+                shopInfo: res,
+              }
+              localStorage.setItem("valorant_book", JSON.stringify(data));
+              layer.msg("登录成功，等待跳转", { type: 1, time: 1000 }, function () {
+                $('.login-btn').removeClass('layui-btn-disabled')
+                $('.login-btn').attr('disabled', false)
+                $('.login-btn').html('登录')
+                location.href = './main.html'
+              });
+            } else {
+              layer.prompt({
+                title: '请输入验证码',
+                btn: ["登录"],
+                cancel: function () {
+                  $('.login-btn').removeClass('layui-btn-disabled')
+                  $('.login-btn').attr('disabled', false)
+                  $('.login-btn').html('登录')
+                }
+              }, function (value, index, elem) {
+                let loadIndex = layer.load(2);
+                putCode(value, (res) => {
+                  if (res.data.code == 410) {
+                    layer.msg(res.data.msg, { time: 1000 });
+                    layer.close(loadIndex);
+                  }
+                  if (res.data.code == 400) {
+                    layer.msg(res.data.msg, { time: 1000 }, function () {
+                      layer.closeAll();
+                    });
+                    $('.login-btn').removeClass('layui-btn-disabled')
+                    $('.login-btn').attr('disabled', false)
+                    $('.login-btn').html('登录')
+                  }
+                  if (res.data.code == 200) {
+                    access_token = res.data.data.access_token;
+                    id_token = res.data.data.id_token;
+                    expires_in = res.data.data.expires_in;
+                    entitlements_token = res.data.data.entitlements_token;
+                    playerId = res.data.data.playerId;
+                    playerName = res.data.data.playerName;
+                    getStore((res) => {
+                      let data = {
+                        access_token: access_token,
+                        id_token: id_token,
+                        expires_in: expires_in,
+                        entitlements_token: entitlements_token,
+                        playerId: playerId,
+                        playerName: playerName,
+                        shopInfo: res,
+                      }
+                      localStorage.setItem("valorant_book", JSON.stringify(data));
+                      layer.closeAll();
+                      layer.msg("登录成功，等待跳转", { type: 1, time: 1000 }, function () {
+                        $('.login-btn').removeClass('layui-btn-disabled')
+                        $('.login-btn').attr('disabled', false)
+                        $('.login-btn').html('登录')
+                        location.href = './main.html'
+                      });
+                    });
+                  }
+                })
+              });
+            }
+
+          }
+          return false;
+        });
+        // layer.msg(JSON.stringify(data.field), function () {
+        //   location.href = '../index.html'
+        // })
+        return false
+      })
+    })
+  })
+</script>
+
+</html>
